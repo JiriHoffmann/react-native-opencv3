@@ -318,19 +318,23 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
                 Log.i(TAG, "Loaded classifier from " + cascadeFile.getAbsolutePath());
             }
             cascadeFile.delete();
+            Log.i(TAG, "classifier" );
 
             int srcMatIndex = mat.getInt("matIndex");
+            Log.i(TAG, "srcMatIndex" );
 
             Mat in = (Mat)MatManager.getInstance().matAtIndex(srcMatIndex);
+            Log.i(TAG, "in" );
 
             MatOfRect faces = new MatOfRect();
-            ArrayList<MatOfPoint2f> landmarks = new ArrayList<>();
-            boolean landmarksFound = false;
             if (classifier != null && in != null) {
                 classifier.detectMultiScale(in, faces, 1.1, 2, 0| Objdetect.CASCADE_SCALE_IMAGE, new Size(24, 24), new Size());
-                
+                Log.i(TAG, "detecting" );
+
             }
+
             Rect[] facesArray = faces.toArray();
+            Log.i(TAG, "facesArray" );
 
             String faceInfo = "";
             if (facesArray.length > 0) {
