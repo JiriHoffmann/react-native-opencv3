@@ -192,31 +192,10 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         double X1 = part.br().x;
         double Y1 = part.br().y;
 
-        double x = X0/widthToUse;
-        double y = Y0/heightToUse;
-        double w = (X1 - X0)/widthToUse;
-        double h = (Y1 - Y0)/heightToUse;
-
-//        switch(mRotation) {
-//            case Core.ROTATE_90_CLOCKWISE:
-//                x = Y0/heightToUse;
-//                y = 1.0 - X1/widthToUse;
-//                w = (Y1 - Y0)/heightToUse;
-//                h = (X1 - X0)/widthToUse;
-//                break;
-//            case Core.ROTATE_180:
-//                x = 1.0 - X1/widthToUse;
-//                y = 1.0 - Y1/heightToUse;
-//                break;
-//            case Core.ROTATE_90_COUNTERCLOCKWISE:
-//                x = 1.0 - Y1/heightToUse;
-//                y = X0/widthToUse;
-//                w = (Y1 - Y0)/heightToUse;
-//                h = (X1 - X0)/widthToUse;
-//                break;
-//            default:
-//                break;
-//        }
+        double x = 1.0 - Y1/heightToUse;
+        double y = X0/widthToUse;
+        double w = (Y1 - Y0)/heightToUse;
+        double h = (X1 - X0)/widthToUse;
 
         sb.append("{\"x\":"+x+",\"y\":"+y+",\"width\":"+w+",\"height\":"+h);
         if (partKey != null) {
@@ -318,7 +297,6 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
                 Log.i(TAG, "Loaded classifier from " + cascadeFile.getAbsolutePath());
             }
             cascadeFile.delete();
-            Log.i(TAG, "classifier" );
 
             int srcMatIndex = mat.getInt("matIndex");
 
@@ -332,7 +310,7 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
 
             Rect[] objectsArray = objects.toArray();
 
-            String faceInfo = "";
+            String resultString = "";
             if (objectsArray.length > 0) {
                 StringBuffer sb = new StringBuffer();
                 sb.append("{\"objects\":[");
@@ -348,9 +326,9 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
                     }
                 }
                 sb.append("]}");
-                faceInfo = sb.toString();
+                resultString = sb.toString();
             }
-            promise.resolve(faceInfo);
+            promise.resolve(resultString);
 
         }
         promise.resolve(null);
