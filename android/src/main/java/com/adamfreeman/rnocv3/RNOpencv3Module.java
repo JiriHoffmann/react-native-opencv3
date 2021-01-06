@@ -321,31 +321,26 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
             Log.i(TAG, "classifier" );
 
             int srcMatIndex = mat.getInt("matIndex");
-            Log.i(TAG, "srcMatIndex" );
 
             Mat in = (Mat)MatManager.getInstance().matAtIndex(srcMatIndex);
-            Log.i(TAG, "in" );
 
-            MatOfRect faces = new MatOfRect();
+            MatOfRect objects = new MatOfRect();
             if (classifier != null && in != null) {
                 classifier.detectMultiScale(in, faces, 1.1, 2, 0| Objdetect.CASCADE_SCALE_IMAGE, new Size(24, 24), new Size());
-                Log.i(TAG, "detecting" );
 
             }
 
-            Rect[] facesArray = faces.toArray();
-            Log.i(TAG, "facesArray" );
+            Rect[] objectsArray = objects.toArray();
 
             String faceInfo = "";
-            if (facesArray.length > 0) {
-                Log.e(TAG, "faces length");
+            if (objectsArray.length > 0) {
                 StringBuffer sb = new StringBuffer();
-                sb.append("{\"faces\":[");
-                for (int i = 0; i < facesArray.length; i++) {
-                    sb.append(getPartJSON(in, null, facesArray[i]));
-                    String id = "faceId" + i;
-                    sb.append(",\"faceId\":\""+id+"\"");
-                    if (i != (facesArray.length - 1)) {
+                sb.append("{\"objects\":[");
+                for (int i = 0; i < objectsArray.length; i++) {
+                    sb.append(getPartJSON(in, null, objectsArray[i]));
+                    String id = "" + i;
+                    sb.append(",\"id\":\""+id+"\"");
+                    if (i != (objectsArray.length - 1)) {
                         sb.append("},");
                     }
                     else {
@@ -356,14 +351,8 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
                 faceInfo = sb.toString();
             }
             promise.resolve(faceInfo);
-            // WritableMap response = new WritableNativeMap();
-            // //Log.d(TAG, "payload is: " + faceInfo);
-            // response.putString("payload", faceInfo);
-            // mContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-            //   .emit("onFacesDetectedCv", response);
+
         }
-        // Toast.makeText(reactContext, cascadeClassifier, Toast.LENGTH_LONG).show();
-        Log.e(TAG, "TES2T TES22222T TE2ST T22EST 2TEST TEST TEST 2TEST TEST");
         promise.resolve(null);
     }
 
