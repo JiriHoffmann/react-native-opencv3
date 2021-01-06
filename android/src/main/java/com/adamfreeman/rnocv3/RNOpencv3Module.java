@@ -326,7 +326,7 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
 
             MatOfRect objects = new MatOfRect();
             if (classifier != null && in != null) {
-                classifier.detectMultiScale(in, faces, 1.1, 2, 0| Objdetect.CASCADE_SCALE_IMAGE, new Size(24, 24), new Size());
+                classifier.detectMultiScale(in, objects);
 
             }
 
