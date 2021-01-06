@@ -23,14 +23,29 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Environment;
 import android.util.Log;
 
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.MatOfRect;
+import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
 import org.opencv.core.Point;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc.*;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.objdetect.Objdetect;
+
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.File;
+import java.util.ArrayList;
 
 // just for testing purposes ...
 import android.widget.Toast;
@@ -58,6 +73,37 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
 
     private void MakeAToast(String message) {
         Toast.makeText(reactContext, message, Toast.LENGTH_LONG).show();
+    }
+
+     private File readClassifierFile(String cascadeClassifier) {
+      File cascadeFile = null;
+      try {
+          // load cascade file from application resources
+          InputStream is = mContext.getAssets().open(cascadeClassifier);
+
+          if (is == null) {
+              Log.e(TAG, "Input stream is nullified!");
+          }
+
+          File cacheDir = mContext.getCacheDir();
+
+          cascadeFile = new File(cacheDir, cascadeClassifier);
+          FileOutputStream os = new FileOutputStream(cascadeFile);
+
+          byte[] buffer = new byte[4096];
+          int bytesRead;
+          while ((bytesRead = is.read(buffer)) != -1) {
+              os.write(buffer, 0, bytesRead);
+          }
+          is.close();
+          os.close();
+      }
+      catch (java.io.IOException ioe) {
+          Log.e(TAG, "Failed to load cascade. IOException thrown: " + ioe.getMessage());
+      }
+      finally {
+          return cascadeFile;
+      }
     }
 
     @ReactMethod
@@ -129,6 +175,54 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
                 Log.e(TAG, "InvocationTargetException thrown attempting to invoke method.  Check your method name and parameters and make sure they are correct.");
             }
         }
+    }
+
+    private String getPartJSON(Mat dFace, String partKey, Rect part) {
+
+        StringBuffer sb = new StringBuffer();
+        if (partKey != null) {
+            sb.append(",\"" + partKey + "\":");
+        }
+
+        double widthToUse = dFace.cols();
+        double heightToUse = dFace.rows();
+
+        double X0 = part.tl().x;
+        double Y0 = part.tl().y;
+        double X1 = part.br().x;
+        double Y1 = part.br().y;
+
+        double x = X0/widthToUse;
+        double y = Y0/heightToUse;
+        double w = (X1 - X0)/widthToUse;
+        double h = (Y1 - Y0)/heightToUse;
+
+//        switch(mRotation) {
+//            case Core.ROTATE_90_CLOCKWISE:
+//                x = Y0/heightToUse;
+//                y = 1.0 - X1/widthToUse;
+//                w = (Y1 - Y0)/heightToUse;
+//                h = (X1 - X0)/widthToUse;
+//                break;
+//            case Core.ROTATE_180:
+//                x = 1.0 - X1/widthToUse;
+//                y = 1.0 - Y1/heightToUse;
+//                break;
+//            case Core.ROTATE_90_COUNTERCLOCKWISE:
+//                x = 1.0 - Y1/heightToUse;
+//                y = X0/widthToUse;
+//                w = (Y1 - Y0)/heightToUse;
+//                h = (X1 - X0)/widthToUse;
+//                break;
+//            default:
+//                break;
+//        }
+
+        sb.append("{\"x\":"+x+",\"y\":"+y+",\"width\":"+w+",\"height\":"+h);
+        if (partKey != null) {
+            sb.append("}");
+        }
+        return sb.toString();
     }
 
     @ReactMethod
@@ -208,6 +302,69 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
     public void deleteMats() {
         MatManager.getInstance().deleteAllMats();
     }
+
+    @ReactMethod
+    public void useCascadeOnImage(String cascadeClassifier, ReadableMap mat, final Promise promise) {
+        // int matIndex = MatManager.getInstance().createMatOfFloat(lomatfloat, himatfloat);
+        WritableNativeMap result = new WritableNativeMap();
+        File cascadeFile = readClassifierFile(cascadeClassifier + ".xml");
+        if (cascadeFile != null) {
+            CascadeClassifier classifier = new CascadeClassifier(cascadeFile.getAbsolutePath());
+            if (classifier.empty()) {
+                Log.e(TAG, "Failed to load cascade classifier");
+                classifier = null;
+            }
+            else {
+                Log.i(TAG, "Loaded classifier from " + cascadeFile.getAbsolutePath());
+            }
+            cascadeFile.delete();
+
+            int srcMatIndex = mat.getInt("matIndex");
+
+            Mat in = (Mat)MatManager.getInstance().matAtIndex(srcMatIndex);
+
+            MatOfRect faces = new MatOfRect();
+            ArrayList<MatOfPoint2f> landmarks = new ArrayList<>();
+            boolean landmarksFound = false;
+            if (classifier != null && in != null) {
+                classifier.detectMultiScale(in, faces, 1.1, 2, 0| Objdetect.CASCADE_SCALE_IMAGE, new Size(24, 24), new Size());
+                
+            }
+            Rect[] facesArray = faces.toArray();
+
+            String faceInfo = "";
+            if (facesArray.length > 0) {
+                Log.e(TAG, "faces length");
+                StringBuffer sb = new StringBuffer();
+                sb.append("{\"faces\":[");
+                for (int i = 0; i < facesArray.length; i++) {
+                    sb.append(getPartJSON(in, null, facesArray[i]));
+                    String id = "faceId" + i;
+                    sb.append(",\"faceId\":\""+id+"\"");
+                    if (i != (facesArray.length - 1)) {
+                        sb.append("},");
+                    }
+                    else {
+                        sb.append("}");
+                    }
+                }
+                sb.append("]}");
+                faceInfo = sb.toString();
+            }
+            promise.resolve(faceInfo);
+            // WritableMap response = new WritableNativeMap();
+            // //Log.d(TAG, "payload is: " + faceInfo);
+            // response.putString("payload", faceInfo);
+            // mContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+            //   .emit("onFacesDetectedCv", response);
+        }
+        // Toast.makeText(reactContext, cascadeClassifier, Toast.LENGTH_LONG).show();
+        Log.e(TAG, "TES2T TES22222T TE2ST T22EST 2TEST TEST TEST 2TEST TEST");
+        promise.resolve(null);
+    }
+
+
+
 
     @ReactMethod
     public void MatOfInt(int lomatint, int himatint, final Promise promise) {

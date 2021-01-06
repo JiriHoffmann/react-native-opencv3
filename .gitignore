@@ -39,6 +39,8 @@ build/
 .gradle
 local.properties
 *.iml
+android/openCVLibrary344/
+android/src/main/jniLibs/
 
 # BUCK
 buck-out/
