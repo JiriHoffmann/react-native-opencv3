@@ -79,13 +79,13 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
       File cascadeFile = null;
       try {
           // load cascade file from application resources
-          InputStream is = mContext.getAssets().open(cascadeClassifier);
+          InputStream is = reactContext.getAssets().open(cascadeClassifier);
 
           if (is == null) {
               Log.e(TAG, "Input stream is nullified!");
           }
 
-          File cacheDir = mContext.getCacheDir();
+          File cacheDir = reactContext.getCacheDir();
 
           cascadeFile = new File(cacheDir, cascadeClassifier);
           FileOutputStream os = new FileOutputStream(cascadeFile);
