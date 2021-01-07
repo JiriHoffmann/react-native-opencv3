@@ -17,7 +17,6 @@ import {CvScalar, CvPoint, CvSize, CvRect} from './coretypes';
 import {Mat, MatOfInt, MatOfFloat, setTo, get} from './mats';
 import {CvImage} from './cvimage';
 import {findNodeHandle} from 'react-native';
-import {downloadAssetSource} from './downloadAssetSource';
 
 const CvCameraView = requireNativeComponent('CvCameraView', CvCamera);
 
@@ -283,14 +282,22 @@ class CvInvoke extends Component {
 
 const RNCv = RNOpencv3;
 const resolveAssetSource = require('react-native/Libraries/Image/resolveAssetSource');
+const downloadAssetSource = require('./downloadAssetSource');
 
 const useCascadeOnImage = (cascade, image) => {
   return new Promise(async (resolve, reject) => {
-    const sourceuri = await resolveAssetSource(image).uri;
-    const sourceFile = await downloadAssetSource(sourceuri);
-    const srcMat = await RNCv.imageToMat(sourceFile);
+     if (typeof image === 'string' && image.startsWith('file')) {
+      finalUri = image.slice(7)
+    } else {
+      const sourceUri = await resolveAssetSource(image).uri
+      finalUri = await downloadAssetSource(sourceUri)
+    }
+    const srcMat = await RNCv.imageToMat(finalUri)
     RNOpencv3.useCascadeOnImage(cascade, srcMat)
       .then(res => {
+        if(res === null){
+          resolve([])
+        }
         let objects = JSON.parse(res).objects;
         if (objects) {
           resolve(objects);
