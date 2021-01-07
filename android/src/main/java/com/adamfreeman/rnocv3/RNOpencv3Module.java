@@ -290,8 +290,9 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         if (cascadeFile != null) {
             CascadeClassifier classifier = new CascadeClassifier(cascadeFile.getAbsolutePath());
             if (classifier.empty()) {
-                Log.e(TAG, "Failed to load cascade classifier");
                 classifier = null;
+                cascadeFile.delete();
+                promise.reject("Create Event error", "Failed to load cascade classifier", null);
             }
             else {
                 Log.i(TAG, "Loaded classifier from " + cascadeFile.getAbsolutePath());
@@ -331,7 +332,7 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
             promise.resolve(resultString);
 
         }
-        promise.resolve(null);
+        promise.reject("Create Event error", "Cascade file doesn't exist", null);
     }
 
 
