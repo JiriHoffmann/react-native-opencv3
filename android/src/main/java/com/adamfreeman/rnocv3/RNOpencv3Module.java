@@ -75,7 +75,7 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         Toast.makeText(reactContext, message, Toast.LENGTH_LONG).show();
     }
 
-     private File readClassifierFile(String cascadeClassifier) {
+    private File readClassifierFile(String cascadeClassifier) {
       File cascadeFile = null;
       try {
           // load cascade file from application resources
@@ -105,6 +105,34 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
           return cascadeFile;
       }
     }
+
+    private String getPartJSON(Mat dFace, String partKey, Rect part) {
+
+        StringBuffer sb = new StringBuffer();
+        if (partKey != null) {
+            sb.append(",\"" + partKey + "\":");
+        }
+
+        double widthToUse = dFace.cols();
+        double heightToUse = dFace.rows();
+
+        double X0 = part.tl().x;
+        double Y0 = part.tl().y;
+        double X1 = part.br().x;
+        double Y1 = part.br().y;
+
+        double x = 1.0 - Y1/heightToUse;
+        double y = X0/widthToUse;
+        double w = (Y1 - Y0)/heightToUse;
+        double h = (X1 - X0)/widthToUse;
+
+        sb.append("{\"x\":"+x+",\"y\":"+y+",\"width\":"+w+",\"height\":"+h);
+        if (partKey != null) {
+            sb.append("}");
+        }
+        return sb.toString();
+    }
+
 
     @ReactMethod
     public void drawLine(ReadableMap inMat, ReadableMap pt1, ReadableMap pt2, ReadableMap scalarVal, int thickness) {
@@ -177,32 +205,6 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         }
     }
 
-    private String getPartJSON(Mat dFace, String partKey, Rect part) {
-
-        StringBuffer sb = new StringBuffer();
-        if (partKey != null) {
-            sb.append(",\"" + partKey + "\":");
-        }
-
-        double widthToUse = dFace.cols();
-        double heightToUse = dFace.rows();
-
-        double X0 = part.tl().x;
-        double Y0 = part.tl().y;
-        double X1 = part.br().x;
-        double Y1 = part.br().y;
-
-        double x = 1.0 - Y1/heightToUse;
-        double y = X0/widthToUse;
-        double w = (Y1 - Y0)/heightToUse;
-        double h = (X1 - X0)/widthToUse;
-
-        sb.append("{\"x\":"+x+",\"y\":"+y+",\"width\":"+w+",\"height\":"+h);
-        if (partKey != null) {
-            sb.append("}");
-        }
-        return sb.toString();
-    }
 
     @ReactMethod
     public void invokeMethodWithCallback(String in, String func, ReadableMap params, String out, String callback) {
@@ -283,9 +285,23 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
     }
 
     @ReactMethod
-    public void useCascadeOnImage(String cascadeClassifier, ReadableMap mat, final Promise promise) {
-        // int matIndex = MatManager.getInstance().createMatOfFloat(lomatfloat, himatfloat);
+    public void MatOfInt(int lomatint, int himatint, final Promise promise) {
+        int matIndex = MatManager.getInstance().createMatOfInt(lomatint, himatint);
         WritableNativeMap result = new WritableNativeMap();
+        result.putInt("matIndex", matIndex);
+        promise.resolve(result);
+    }
+
+    @ReactMethod
+    public void MatOfFloat(float lomatfloat, float himatfloat, final Promise promise) {
+        int matIndex = MatManager.getInstance().createMatOfFloat(lomatfloat, himatfloat);
+        WritableNativeMap result = new WritableNativeMap();
+        result.putInt("matIndex", matIndex);
+        promise.resolve(result);
+    }
+    
+    @ReactMethod
+    public void useCascadeOnImage(String cascadeClassifier, ReadableMap mat, final Promise promise) {
         File cascadeFile = readClassifierFile(cascadeClassifier + ".xml");
         if (cascadeFile != null) {
             CascadeClassifier classifier = new CascadeClassifier(cascadeFile.getAbsolutePath());
@@ -335,24 +351,5 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         promise.reject("Create Event error", "Cascade file doesn't exist", null);
     }
 
-
-
-
-    @ReactMethod
-    public void MatOfInt(int lomatint, int himatint, final Promise promise) {
-        int matIndex = MatManager.getInstance().createMatOfInt(lomatint, himatint);
-        WritableNativeMap result = new WritableNativeMap();
-        result.putInt("matIndex", matIndex);
-        promise.resolve(result);
-    }
-
-    @ReactMethod
-    public void MatOfFloat(float lomatfloat, float himatfloat, final Promise promise) {
-        int matIndex = MatManager.getInstance().createMatOfFloat(lomatfloat, himatfloat);
-        WritableNativeMap result = new WritableNativeMap();
-        result.putInt("matIndex", matIndex);
-        promise.resolve(result);
-    }
-	
 	
 }
