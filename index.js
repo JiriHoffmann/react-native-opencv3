@@ -287,7 +287,7 @@ const downloadAssetSource = require('./downloadAssetSource');
 const useCascadeOnImage = (cascade, image) => {
   return new Promise(async (resolve, reject) => {
      if (typeof image === 'string' && image.startsWith('file')) {
-      finalUri = image.slice(7)
+      finalUri = image.slice(6)
     } else {
       const sourceUri = await resolveAssetSource(image).uri
       finalUri = await downloadAssetSource(sourceUri)

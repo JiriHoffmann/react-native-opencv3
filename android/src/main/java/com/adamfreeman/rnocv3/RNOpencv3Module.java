@@ -19,7 +19,9 @@ import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
 import androidx.appcompat.app.AppCompatActivity;
+
 import android.os.Environment;
 import android.util.Log;
 
@@ -76,34 +78,100 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
     }
 
     private File readClassifierFile(String cascadeClassifier) {
-      File cascadeFile = null;
-      try {
-          // load cascade file from application resources
-          InputStream is = reactContext.getAssets().open(cascadeClassifier);
+        File cascadeFile = null;
+        try {
+            // load cascade file from application resources
+            InputStream is = reactContext.getAssets().open(cascadeClassifier);
 
-          if (is == null) {
-              Log.e(TAG, "Input stream is nullified!");
-          }
+            if (is == null) {
+                Log.e(TAG, "Input stream is nullified!");
+            }
 
-          File cacheDir = reactContext.getCacheDir();
+            File cacheDir = reactContext.getCacheDir();
 
-          cascadeFile = new File(cacheDir, cascadeClassifier);
-          FileOutputStream os = new FileOutputStream(cascadeFile);
+            cascadeFile = new File(cacheDir, cascadeClassifier);
+            FileOutputStream os = new FileOutputStream(cascadeFile);
 
-          byte[] buffer = new byte[4096];
-          int bytesRead;
-          while ((bytesRead = is.read(buffer)) != -1) {
-              os.write(buffer, 0, bytesRead);
-          }
-          is.close();
-          os.close();
-      }
-      catch (java.io.IOException ioe) {
-          Log.e(TAG, "Failed to load cascade. IOException thrown: " + ioe.getMessage());
-      }
-      finally {
-          return cascadeFile;
-      }
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = is.read(buffer)) != -1) {
+                os.write(buffer, 0, bytesRead);
+            }
+            is.close();
+            os.close();
+        } catch (java.io.IOException ioe) {
+            Log.e(TAG, "Failed to load cascade. IOException thrown: " + ioe.getMessage());
+        } finally {
+            return cascadeFile;
+        }
+    }
+
+    @ReactMethod
+    public void drawLine(ReadableMap inMat, ReadableMap pt1, ReadableMap pt2, ReadableMap scalarVal, int thickness) {
+        int matIndex = inMat.getInt("matIndex");
+        Mat testMat = (Mat) MatManager.getInstance().matAtIndex(matIndex);
+        double x1 = pt1.getDouble("x");
+        double y1 = pt1.getDouble("y");
+        double x2 = pt2.getDouble("x");
+        double y2 = pt2.getDouble("y");
+        Point p1 = new Point(x1, y1);
+        Point p2 = new Point(x2, y2);
+        Scalar dScalar = Scalar.all(255);
+        Imgproc.line(testMat, p1, p2, dScalar, thickness);
+        MatManager.getInstance().setMat(matIndex, testMat);
+    }
+
+    @ReactMethod
+    public void cvtColor(ReadableMap sourceMat, ReadableMap destMat, int convColorCode) {
+        int srcMatIndex = sourceMat.getInt("matIndex");
+        int dstMatIndex = destMat.getInt("matIndex");
+
+        Mat srcMat = (Mat) MatManager.getInstance().matAtIndex(srcMatIndex);
+        Mat dstMat = (Mat) MatManager.getInstance().matAtIndex(dstMatIndex);
+
+        Imgproc.cvtColor(srcMat, dstMat, convColorCode);
+        MatManager.getInstance().setMat(dstMatIndex, dstMat);
+    }
+
+    @ReactMethod
+    public void imageToMat(String inPath, final Promise promise) {
+        FileUtils.getInstance().imageToMat(inPath, promise);
+    }
+
+    @ReactMethod
+    public void matToImage(ReadableMap srcMat, String outPath, final Promise promise) {
+        int matIndex = srcMat.getInt("matIndex");
+        Mat mat = (Mat) MatManager.getInstance().matAtIndex(matIndex);
+        FileUtils.getInstance().matToImage(mat, outPath, promise);
+    }
+
+    @ReactMethod
+    public void invokeMethods(ReadableMap cvInvokeMap) {
+        CvInvoke invoker = new CvInvoke();
+        WritableArray responseArr = invoker.parseInvokeMap(cvInvokeMap);
+        String lastCall = invoker.callback;
+        int dstMatIndex = invoker.dstMatIndex;
+        sendCallbackData(responseArr, lastCall, dstMatIndex);
+    }
+
+    // IMPT NOTE: retArr can either be one single array or an array of arrays ...
+    // TODO: move this into RNOpencv3Util class ...
+    public void sendCallbackData(WritableArray retArr, String callback, int dstMatIndex) {
+        if (callback != null && !callback.equals("") && dstMatIndex >= 0 && dstMatIndex < 1000) {
+            WritableMap response = new WritableNativeMap();
+            response.putArray("payload", retArr);
+            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                    .emit(callback, response);
+        } else {
+            // not necessarily error condition unless dstMatIndex >= 1000
+            if (dstMatIndex == 1000) {
+                Log.e(TAG, "SecurityException thrown attempting to invoke method.  Check your method name and parameters and make sure they are correct.");
+            } else if (dstMatIndex == 1001) {
+                Log.e(TAG, "IllegalAccessException thrown attempting to invoke method.  Check your method name and parameters and make sure they are correct.");
+            } else if (dstMatIndex == 1002) {
+                Log.e(TAG, "InvocationTargetException thrown attempting to invoke method.  Check your method name and parameters and make sure they are correct.");
+            }
+        }
     }
 
     private String getPartJSON(Mat dFace, String partKey, Rect part) {
@@ -121,90 +189,17 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         double X1 = part.br().x;
         double Y1 = part.br().y;
 
-        double x = 1.0 - Y1/heightToUse;
-        double y = X0/widthToUse;
-        double w = (Y1 - Y0)/heightToUse;
-        double h = (X1 - X0)/widthToUse;
+        double x = X0 / widthToUse;
+        double y = Y0 / heightToUse;
+        double w = (X1 - X0) / widthToUse;
+        double h = (Y1 - Y0) / heightToUse;
 
-        sb.append("{\"x\":"+x+",\"y\":"+y+",\"width\":"+w+",\"height\":"+h);
+        sb.append("{\"x\":" + x + ",\"y\":" + y + ",\"width\":" + w + ",\"height\":" + h);
         if (partKey != null) {
             sb.append("}");
         }
         return sb.toString();
     }
-
-
-    @ReactMethod
-    public void drawLine(ReadableMap inMat, ReadableMap pt1, ReadableMap pt2, ReadableMap scalarVal, int thickness) {
-        int matIndex = inMat.getInt("matIndex");
-        Mat testMat = (Mat)MatManager.getInstance().matAtIndex(matIndex);
-        double x1 = pt1.getDouble("x");
-        double y1 = pt1.getDouble("y");
-        double x2 = pt2.getDouble("x");
-        double y2 = pt2.getDouble("y");
-        Point p1 = new Point(x1,y1);
-        Point p2 = new Point(x2,y2);
-        Scalar dScalar = Scalar.all(255);
-        Imgproc.line(testMat,p1,p2,dScalar,thickness);
-        MatManager.getInstance().setMat(matIndex, testMat);
-    }
-
-    @ReactMethod
-    public void cvtColor(ReadableMap sourceMat, ReadableMap destMat, int convColorCode) {
-        int srcMatIndex = sourceMat.getInt("matIndex");
-        int dstMatIndex = destMat.getInt("matIndex");
-
-        Mat srcMat = (Mat)MatManager.getInstance().matAtIndex(srcMatIndex);
-        Mat dstMat = (Mat)MatManager.getInstance().matAtIndex(dstMatIndex);
-
-        Imgproc.cvtColor(srcMat, dstMat, convColorCode);
-        MatManager.getInstance().setMat(dstMatIndex, dstMat);
-    }
-	
-    @ReactMethod
-    public void imageToMat(String inPath, final Promise promise) {
-        FileUtils.getInstance().imageToMat(inPath, promise);
-    }
-
-    @ReactMethod
-    public void matToImage(ReadableMap srcMat, String outPath, final Promise promise) {
-        int matIndex = srcMat.getInt("matIndex");
-        Mat mat = (Mat)MatManager.getInstance().matAtIndex(matIndex);
-		FileUtils.getInstance().matToImage(mat, outPath, promise);
-    }
-
-    @ReactMethod
-    public void invokeMethods(ReadableMap cvInvokeMap) {
-        CvInvoke invoker = new CvInvoke();
-        WritableArray responseArr = invoker.parseInvokeMap(cvInvokeMap);
-        String lastCall = invoker.callback;
-		int dstMatIndex = invoker.dstMatIndex;
-        sendCallbackData(responseArr, lastCall, dstMatIndex);
-    }
-
-    // IMPT NOTE: retArr can either be one single array or an array of arrays ...
-	// TODO: move this into RNOpencv3Util class ...				
-    public void sendCallbackData(WritableArray retArr, String callback, int dstMatIndex) {
-        if (callback != null && !callback.equals("") && dstMatIndex >= 0 && dstMatIndex < 1000) {
-            WritableMap response = new WritableNativeMap();
-            response.putArray("payload", retArr);
-            reactContext.getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit(callback, response);
-        }
-        else {
-            // not necessarily error condition unless dstMatIndex >= 1000
-            if (dstMatIndex == 1000) {
-                Log.e(TAG, "SecurityException thrown attempting to invoke method.  Check your method name and parameters and make sure they are correct.");
-            }
-            else if (dstMatIndex == 1001) {
-                Log.e(TAG, "IllegalAccessException thrown attempting to invoke method.  Check your method name and parameters and make sure they are correct.");
-            }
-            else if (dstMatIndex == 1002) {
-                Log.e(TAG, "InvocationTargetException thrown attempting to invoke method.  Check your method name and parameters and make sure they are correct.");
-            }
-        }
-    }
-
 
     @ReactMethod
     public void invokeMethodWithCallback(String in, String func, ReadableMap params, String out, String callback) {
@@ -284,6 +279,7 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         MatManager.getInstance().deleteAllMats();
     }
 
+
     @ReactMethod
     public void MatOfInt(int lomatint, int himatint, final Promise promise) {
         int matIndex = MatManager.getInstance().createMatOfInt(lomatint, himatint);
@@ -299,7 +295,7 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         result.putInt("matIndex", matIndex);
         promise.resolve(result);
     }
-    
+
     @ReactMethod
     public void useCascadeOnImage(String cascadeClassifier, ReadableMap mat, final Promise promise) {
         File cascadeFile = readClassifierFile(cascadeClassifier + ".xml");
@@ -308,16 +304,15 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
             if (classifier.empty()) {
                 classifier = null;
                 cascadeFile.delete();
-                promise.reject("Create Event error", "Failed to load cascade classifier", null);
-            }
-            else {
+                promise.reject("Create Event error", "Cascade file doesn't exist", new Exception());
+            } else {
                 Log.i(TAG, "Loaded classifier from " + cascadeFile.getAbsolutePath());
             }
             cascadeFile.delete();
 
             int srcMatIndex = mat.getInt("matIndex");
 
-            Mat in = (Mat)MatManager.getInstance().matAtIndex(srcMatIndex);
+            Mat in = (Mat) MatManager.getInstance().matAtIndex(srcMatIndex);
 
             MatOfRect objects = new MatOfRect();
             if (classifier != null && in != null) {
@@ -334,11 +329,10 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
                 for (int i = 0; i < objectsArray.length; i++) {
                     sb.append(getPartJSON(in, null, objectsArray[i]));
                     String id = "" + i;
-                    sb.append(",\"id\":\""+id+"\"");
+                    sb.append(",\"id\":\"" + id + "\"");
                     if (i != (objectsArray.length - 1)) {
                         sb.append("},");
-                    }
-                    else {
+                    } else {
                         sb.append("}");
                     }
                 }
@@ -348,8 +342,6 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
             promise.resolve(resultString);
 
         }
-        promise.reject("Create Event error", "Cascade file doesn't exist", null);
+        promise.reject("Create Event error", "Cascade file doesn't exist", new Exception());
     }
-
-	
 }
