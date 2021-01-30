@@ -279,23 +279,6 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         MatManager.getInstance().deleteAllMats();
     }
 
-
-    @ReactMethod
-    public void MatOfInt(int lomatint, int himatint, final Promise promise) {
-        int matIndex = MatManager.getInstance().createMatOfInt(lomatint, himatint);
-        WritableNativeMap result = new WritableNativeMap();
-        result.putInt("matIndex", matIndex);
-        promise.resolve(result);
-    }
-
-    @ReactMethod
-    public void MatOfFloat(float lomatfloat, float himatfloat, final Promise promise) {
-        int matIndex = MatManager.getInstance().createMatOfFloat(lomatfloat, himatfloat);
-        WritableNativeMap result = new WritableNativeMap();
-        result.putInt("matIndex", matIndex);
-        promise.resolve(result);
-    }
-
     @ReactMethod
     public void useCascadeOnImage(String cascadeClassifier, ReadableMap mat, final Promise promise) {
         File cascadeFile = readClassifierFile(cascadeClassifier + ".xml");
@@ -344,4 +327,23 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         }
         promise.reject("Create Event error", "Cascade file doesn't exist", new Exception());
     }
+
+
+    @ReactMethod
+    public void MatOfInt(int lomatint, int himatint, final Promise promise) {
+        int matIndex = MatManager.getInstance().createMatOfInt(lomatint, himatint);
+        WritableNativeMap result = new WritableNativeMap();
+        result.putInt("matIndex", matIndex);
+        promise.resolve(result);
+    }
+
+    @ReactMethod
+    public void MatOfFloat(float lomatfloat, float himatfloat, final Promise promise) {
+        int matIndex = MatManager.getInstance().createMatOfFloat(lomatfloat, himatfloat);
+        WritableNativeMap result = new WritableNativeMap();
+        result.putInt("matIndex", matIndex);
+        promise.resolve(result);
+    }
+
+
 }

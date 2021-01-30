@@ -257,11 +257,11 @@ RCT_EXPORT_METHOD(useCascadeOnImage:(NSString *)cascadeClassifier src:(NSDiction
                 payloadJSON = [payloadJSON stringByAppendingString:@"{\"objects\":["];
                 for(size_t i = 0; i < objects.size(); i++) {
                     
-                    NSString *faceJSON = [self getPartJSON:in partKey:@"" part:objects[i]];
-                                          payloadJSON = [payloadJSON stringByAppendingString:faceJSON];
+                    NSString *objectJSON = [self getPartJSON:in partKey:@"" part:objects[i]];
+                                          payloadJSON = [payloadJSON stringByAppendingString:objectJSON];
                                           
-                                          NSString *faceIdStr = [NSString stringWithFormat:@",\"id\":\"%d\"", (int)i];
-                                          payloadJSON = [payloadJSON stringByAppendingString:faceIdStr];
+                                          NSString *objectIdStr = [NSString stringWithFormat:@",\"id\":\"%d\"", (int)i];
+                                          payloadJSON = [payloadJSON stringByAppendingString:objectIdStr];
                                           
                                           if (i != (objects.size() - 1)) {
                         payloadJSON = [payloadJSON stringByAppendingString:@"},"];

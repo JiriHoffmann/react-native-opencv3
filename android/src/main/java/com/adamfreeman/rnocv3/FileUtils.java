@@ -15,17 +15,21 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.FileNotFoundException;
+
+import android.media.ExifInterface;
+import android.graphics.Matrix;
 import android.util.Log;
+
 
 class FileUtils {
 
     private static final String TAG = FileUtils.class.getSimpleName();
 
     private static FileUtils fileUtils = null;
-	
+
     private FileUtils() {
     }
-	
+
     // static method to create instance of Singleton class
     public static FileUtils getInstance() {
         if (fileUtils == null)
@@ -33,7 +37,7 @@ class FileUtils {
 
         return fileUtils;
     }
-	
+
     private static void reject(Promise promise, String filepath, Exception ex) {
         if (ex instanceof FileNotFoundException) {
             rejectFileNotFound(promise, filepath);
@@ -54,7 +58,7 @@ class FileUtils {
     private static void rejectInvalidParam(Promise promise, String param) {
         promise.reject("EINVAL", "EINVAL: invalid parameter, read '" + param + "'");
     }
-	
+
     public static void imageToMat(final String inPath, final Promise promise) {
         try {
             if (inPath == null || inPath.length() == 0) {
@@ -63,7 +67,7 @@ class FileUtils {
             }
 
             File inFileTest = new File(inPath);
-            if(!inFileTest.exists()) {
+            if (!inFileTest.exists()) {
                 rejectFileNotFound(promise, inPath);
                 return;
             }
@@ -75,7 +79,48 @@ class FileUtils {
             Bitmap bitmap = BitmapFactory.decodeFile(inPath);
             if (bitmap == null) {
                 throw new IOException("Decoding error unable to decode: " + inPath);
-            }			
+            }
+
+            ExifInterface exif = new ExifInterface(inPath);
+            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+            if (orientation != 1) {
+
+                Matrix matrix = new Matrix();
+                switch (orientation) {
+                    case 2:
+                        matrix.setScale(-1, 1);
+                        break;
+                    case 3:
+                        matrix.postRotate(180);
+                        break;
+                    case 4:
+                        matrix.postRotate(180);
+                        matrix.postScale(-1, 1);
+                        break;
+                    case 5:
+                        matrix.postRotate(90);
+                        matrix.postScale(-1, 1);
+                        break;
+                    case 6:
+                        matrix.postRotate(90);
+                        break;
+                    case 7:
+                        matrix.postRotate(-90);
+                        matrix.postScale(-1, 1);
+                        break;
+                    case 8:
+                        matrix.postRotate(-90);
+                        break;
+                    default:
+                        break;
+                }
+
+
+                bitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+                        bitmap.getHeight(), matrix, true);
+            }
+
+
             Mat img = new Mat(bitmap.getHeight(), bitmap.getWidth(), CvType.CV_8UC4);
             Utils.bitmapToMat(bitmap, img);
             int matIndex = MatManager.getInstance().addMat(img);
@@ -85,8 +130,7 @@ class FileUtils {
             result.putInt("rows", img.rows());
             result.putInt("matIndex", matIndex);
             promise.resolve(result);
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             reject(promise, "EGENERIC", ex);
         }
     }
@@ -111,9 +155,8 @@ class FileUtils {
                 String fileType = "";
                 int i = outPath.lastIndexOf('.');
                 if (i > 0) {
-                    fileType = outPath.substring(i+1).toLowerCase();
-                }
-                else {
+                    fileType = outPath.substring(i + 1).toLowerCase();
+                } else {
                     rejectInvalidParam(promise, outPath);
                     file.close();
                     return;
@@ -121,18 +164,15 @@ class FileUtils {
 
                 if (fileType.equals("png")) {
                     bm.compress(Bitmap.CompressFormat.PNG, 100, file);
-                }
-                else if (fileType.equals("jpg") || fileType.equals("jpeg")) {
+                } else if (fileType.equals("jpg") || fileType.equals("jpeg")) {
                     bm.compress(Bitmap.CompressFormat.JPEG, 80, file);
-                }
-                else {
+                } else {
                     rejectInvalidParam(promise, outPath);
                     file.close();
                     return;
                 }
                 file.close();
-            }
-            else {
+            } else {
                 rejectFileNotFound(promise, outPath);
                 return;
             }
@@ -142,8 +182,7 @@ class FileUtils {
             result.putInt("height", height);
             result.putString("uri", outPath);
             promise.resolve(result);
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             reject(promise, "EGENERIC", ex);
         }
     }
