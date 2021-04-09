@@ -295,7 +295,7 @@ const useCascadeOnImage = (cascade, image) => {
     const srcMat = await RNCv.imageToMat(finalUri)
     RNOpencv3.useCascadeOnImage(cascade, srcMat)
       .then(res => {
-        if(res === null){
+        if(res === null || res === ''){
           resolve([])
         }
         let objects = JSON.parse(res).objects;
