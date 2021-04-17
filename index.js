@@ -1,22 +1,22 @@
 import { NativeModules } from 'react-native';
 
 const { RNOpencv3 } = NativeModules;
-
-const RNCv = RNOpencv3;
 const resolveAssetSource = require('react-native/Libraries/Image/resolveAssetSource');
 const downloadAssetSource = require('./downloadAssetSource');
 
-const useCascadeOnImage = (cascade, image) => {
+
+const useCascadeOnImage = (cascadeLocation, image) => {
 	return new Promise(async (resolve, reject) => {
-		let finalUri = '';
+		// get the image in correct string format
+		let finalImageUri = '';
 		if (typeof image === 'string' && image.startsWith('file')) {
-			finalUri = image.slice(6);
+			finalImageUri = image.slice(6);
 		} else {
 			const sourceUri = await resolveAssetSource(image).uri;
-			finalUri = await downloadAssetSource(sourceUri);
+			finalImageUri = await downloadAssetSource(sourceUri);
 		}
-		const srcMat = await RNCv.imageToMat(finalUri);
-		RNOpencv3.useCascadeOnImage(cascade, srcMat)
+		const srcMat = await RNOpencv3.imageToMat(finalImageUri);
+		RNOpencv3.useCascadeOnImage(cascadeLocation, srcMat)
 			.then((res) => {
 				if (res === null || res === '') {
 					resolve([]);

@@ -56,6 +56,8 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
 
     private static final String TAG = RNOpencv3Module.class.getSimpleName();
 
+    private boolean cascadeStoredInCache = false;
+
     static {
         System.loadLibrary("opencv_java3");
     }
@@ -77,32 +79,44 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
         Toast.makeText(reactContext, message, Toast.LENGTH_LONG).show();
     }
 
-    private File readClassifierFile(String cascadeClassifier) {
+    private File readClassifierFile(String cascadeFileLocation) {
         File cascadeFile = null;
+        cascadeStoredInCache = false;
         try {
-            // load cascade file from application resources
-            InputStream is = reactContext.getAssets().open(cascadeClassifier);
-
-            if (is == null) {
-                Log.e(TAG, "Input stream is nullified!");
+            cascadeFile = new File(cascadeFileLocation);
+            if(!cascadeFile.exists()){
+                throw new Exception("File doesn't exist");
             }
-
-            File cacheDir = reactContext.getCacheDir();
-
-            cascadeFile = new File(cacheDir, cascadeClassifier);
-            FileOutputStream os = new FileOutputStream(cascadeFile);
-
-            byte[] buffer = new byte[4096];
-            int bytesRead;
-            while ((bytesRead = is.read(buffer)) != -1) {
-                os.write(buffer, 0, bytesRead);
-            }
-            is.close();
-            os.close();
-        } catch (java.io.IOException ioe) {
-            Log.e(TAG, "Failed to load cascade. IOException thrown: " + ioe.getMessage());
-        } finally {
             return cascadeFile;
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to load cascade from specified location:" + e);
+            try {
+                // load backup cascade file from assets
+                InputStream is = reactContext.getAssets().open("cascade.xml");
+.
+                if (is == null) {
+                    Log.e(TAG, "Input stream is nullified!");
+                }
+
+                File cacheDir = reactContext.getCacheDir();
+
+                cascadeFile = new File(cacheDir, "cascade.xml");
+                FileOutputStream os = new FileOutputStream(cascadeFile);
+
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    os.write(buffer, 0, bytesRead);
+                }
+                is.close();
+                os.close();
+
+                cascadeStoredInCache = true;
+                return cascadeFile;
+            } catch (java.io.IOException ioe) {
+                Log.e(TAG, "Failed to load backup cascade. IOException thrown: " + ioe.getMessage());
+                return null;
+            }
         }
     }
 
@@ -281,17 +295,18 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void useCascadeOnImage(String cascadeClassifier, ReadableMap mat, final Promise promise) {
-        File cascadeFile = readClassifierFile(cascadeClassifier + ".xml");
+        File cascadeFile = readClassifierFile(cascadeClassifier);
         if (cascadeFile != null) {
             CascadeClassifier classifier = new CascadeClassifier(cascadeFile.getAbsolutePath());
             if (classifier.empty()) {
                 classifier = null;
-                cascadeFile.delete();
                 promise.reject("Create Event error", "Cascade file doesn't exist", new Exception());
             } else {
                 Log.i(TAG, "Loaded classifier from " + cascadeFile.getAbsolutePath());
             }
-            cascadeFile.delete();
+            if(cascadeStoredInCache){
+                 cascadeFile.delete();
+            }
 
             int srcMatIndex = mat.getInt("matIndex");
 
@@ -321,6 +336,8 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
                 }
                 sb.append("]}");
                 resultString = sb.toString();
+            } else{
+                resultString = "{\"objects\":[]}";
             }
             promise.resolve(resultString);
 
