@@ -93,7 +93,7 @@ public class RNOpencv3Module extends ReactContextBaseJavaModule {
             try {
                 // load backup cascade file from assets
                 InputStream is = reactContext.getAssets().open("cascade.xml");
-.
+                
                 if (is == null) {
                     Log.e(TAG, "Input stream is nullified!");
                 }
