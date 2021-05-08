@@ -228,14 +228,15 @@ RCT_EXPORT_METHOD(deleteMats) {
 
 RCT_EXPORT_METHOD(useCascadeOnImage:(NSString *)cascadeClassifier src:(NSDictionary*)src resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
-    RCTLogInfo(@"Pretending to create an event %@", cascadeClassifier);
+    NSString *cascadePath;
+    if([cascadeClassifier length] == 0){
+        cascadePath = [FileUtils loadBundleResource:@"cascade" extension:@"xml"];
+    } else {
+        cascadePath = cascadeClassifier;
+    }
     
-    NSString *cascadePath = [FileUtils loadBundleResource:cascadeClassifier extension:@"xml"];
-    RCTLogInfo(@"cascade path %@", cascadePath);
-
     CascadeClassifier cascade;
     if (cascadePath) {
-        RCTLogInfo(@"if cascade path");
 
         if (!cascade.load( std::string([cascadePath UTF8String]))) {
             NSLog(@"Unable to load cascade classifier at: %@", cascadePath);
