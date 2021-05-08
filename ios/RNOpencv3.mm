@@ -95,21 +95,21 @@ RCT_EXPORT_METHOD(matToImage:(NSDictionary*)src outPath:(NSString*)outPath resol
     [FileUtils matToImage:inputMatWrapper outPath:outPath resolver:resolve rejecter:reject];
 }
 
-RCT_EXPORT_METHOD(cvtColor:(NSDictionary*)src dstMat:(NSDictionary*)dst convColorCode:(int)convColorCode) {
-    
-    NSNumber *srcMatNum = [src valueForKey:@"matIndex"];
-    NSNumber *dstMatNum = [dst valueForKey:@"matIndex"];
-    
-    int srcMatIndex = (int)[srcMatNum integerValue];
-    int dstMatIndex = (int)[dstMatNum integerValue];
-    
-    Mat srcMat = [MatManager.sharedMgr matAtIndex:srcMatIndex];
-    Mat dstMat = [MatManager.sharedMgr matAtIndex:dstMatIndex];
-    
-    cvtColor(srcMat, dstMat, convColorCode);
-    
-    [MatManager.sharedMgr setMat:dstMatIndex matToSet:dstMat];
-}
+//RCT_EXPORT_METHOD(cvtColor:(NSDictionary*)src dstMat:(NSDictionary*)dst convColorCode:(int)convColorCode) {
+//    
+//    NSNumber *srcMatNum = [src valueForKey:@"matIndex"];
+//    NSNumber *dstMatNum = [dst valueForKey:@"matIndex"];
+//    
+//    int srcMatIndex = (int)[srcMatNum integerValue];
+//    int dstMatIndex = (int)[dstMatNum integerValue];
+//    
+//    Mat srcMat = [MatManager.sharedMgr matAtIndex:srcMatIndex];
+//    Mat dstMat = [MatManager.sharedMgr matAtIndex:dstMatIndex];
+//    
+//    cvtColor(srcMat, dstMat, convColorCode);
+//    
+//    [MatManager.sharedMgr setMat:dstMatIndex matToSet:dstMat];
+//}
 
 
 RCT_EXPORT_METHOD(invokeMethods:(NSDictionary*)cvInvokeMap) {
@@ -273,7 +273,7 @@ RCT_EXPORT_METHOD(useCascadeOnImage:(NSString *)cascadeClassifier src:(NSDiction
                 payloadJSON = [payloadJSON stringByAppendingString:@"]}"];
                 resolve(payloadJSON);
             } else {
-                resolve(@"{\"objects\":[]}")
+                resolve(@"{\"objects\":[]}");
             }
         }
     } else {

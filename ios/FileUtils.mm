@@ -7,7 +7,7 @@
 //
 
 #import "FileUtils.h"
-#import "CvCamera.h"
+#import "RNOpencv3.h"
 #import "MatManager.h"
 #import <Foundation/Foundation.h>
 
@@ -15,7 +15,7 @@
 
 + (NSString*)loadBundleResource:(NSString*)filename extension:(NSString*)extension {
 
-    NSBundle *podBundle = [NSBundle bundleForClass:CvCamera.class];
+    NSBundle *podBundle = [NSBundle bundleForClass:RNOpencv3.class];
     NSURL *bundleURL = [podBundle URLForResource:@"ocvdata" withExtension:@"bundle"];
     NSBundle *dBundle = [NSBundle bundleWithURL:bundleURL];
     NSString *landmarksPath = [dBundle pathForResource:filename ofType:extension];
