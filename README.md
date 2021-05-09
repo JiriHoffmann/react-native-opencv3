@@ -1,4 +1,27 @@
 
+# Edited version of react-native-opencv3 (v1.0.8)
+
+- Modified to support object detection on a picture
+- Uses provided cascade URI for detection
+- Included cascade file is used as a fallback if the prop URI is not working
+
+For ***iOS*** provide cascade in ```ios/ocvdata```, make sure it shows up in XCode.
+For ***Android*** provide cascade in  ```android/src/main/assets```.
+
+Example usage:
+
+```javascript
+import { useCascadeOnImage } from 'react-native-opencv3'
+
+ useCascadeOnImage(cascadeURI, photoURI)
+      .then((res) => {
+        // returns an array of detected objects
+        // size and position is relative to the image in percentage 
+      })
+      .catch((err) => {
+        console.log(err)
+      })
+```
 # react-native-opencv3 (v1.0.8)
 
 React-native opencv3 or "RNOpencv3" wraps opencv native functions and propagates the return data from these functions to react native land for usage in android and iOS apps enabling native app developers with new functionality.  This package is not guaranteed bug-free and does not encompass all of OpenCV but is a good starting point with a nice chunk of Imgproc and Core functions supported and face and landmark detection and image and video overlays as well as saving images and recording video.  All two way communication between react-native and OpenCV is supported and thus can be expanded upon.  It establishes an infrastructure and provides scaffolding for eventually incorporating all functionality from OpenCV core and extension modules.  
